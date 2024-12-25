@@ -89,8 +89,5 @@ iterateN (a0, b0, c0, d0, e0) ws = (a0 + a1, b0 + b1, c0 + c1, d0 + d1, e0 + e1)
 calcSha1 :: [Word8] -> Vector
 calcSha1 = (foldl iterateN iv) . (chunksOf 16) . (Prelude.map convert8to32) . (chunksOf 4) . prepare
 
-accumulateHex :: String -> Word32 -> String
-accumulateHex xs y = showHex y xs
-
 vector2String :: Vector -> String
-vector2String (a, b, c, d, e) = foldl accumulateHex "" [e, d, c, b, a]
+vector2String (a, b, c, d, e) = foldr showHex "" [a, b, c, d, e]
