@@ -15,13 +15,12 @@ padSize ws = unitSize - 1 - mod (length ws) unitSize - lengthIndicatorSize
 pad :: [Word8] -> [Word8]
 pad = zeroes . padSize
 
--- the length of returned list is lengthIndicatorSize
 lengthIndicator :: [Word8] -> [Word8]
-lengthIndicator = numInBits . length
+lengthIndicator = (numInBits lengthIndicatorSize) . length
 
 -- n < 2^64 == 256^8
-numInBits :: Int -> [Word8]
-numInBits n = map (fromIntegral . (shiftR (8 * n)) . ((*) 8)) [7, 6..0]
+numInBits :: Int -> Int -> [Word8]
+numInBits len n = reverse $ map (fromIntegral . (shiftR (8 * n)) . ((*) 8)) $ take len [0..]
 
 prepare :: [Word8] -> [Word8]
 prepare ws = ws ++ (0x80:(pad ws)) ++ (lengthIndicator ws)
