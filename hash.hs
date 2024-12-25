@@ -13,7 +13,7 @@ padSize :: [a] -> Int
 padSize ws = unitSize - 1 - mod (length ws) unitSize - lengthIndicatorSize
 
 pad :: [Word8] -> [Word8]
-pad ws = zeroes $ padSize ws
+pad = zeroes . padSize
 
 lengthIndicator :: [Word8] -> [Word8]
 lengthIndicator ws = numInBits $ length ws
