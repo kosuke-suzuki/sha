@@ -20,8 +20,7 @@ lengthIndicator ws = numInBits $ length ws
 
 -- n < 2^64 == 256^8
 numInBits :: Int -> [Word8]
-numInBits n = reverse $ map (fromIntegral . f) [0..7]
-  where f i = shiftR (8 * n) (8 * i)
+numInBits n = map (fromIntegral . (shiftR (8 * n)) . ((*) 8)) [7, 6..0]
 
 prepare :: [Word8] -> [Word8]
 prepare ws = ws ++ (0x80:(pad ws)) ++ (lengthIndicator ws)
