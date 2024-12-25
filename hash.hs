@@ -27,11 +27,7 @@ prepare ws = ws ++ (0x80:(pad ws)) ++ (lengthIndicator ws)
 
 -- 4 Word8s to 1 Word32 in big endians
 convert8to32 :: [Word8] -> Word32
-convert8to32 [w1, w2, w3, w4] =
-  (fromIntegral w1 `shiftL` 24) .|.
-  (fromIntegral w2 `shiftL` 16) .|.
-  (fromIntegral w3 `shiftL`  8) .|.
-  fromIntegral w4
+convert8to32 = (foldl (\acc w -> (shiftL acc 8) .|. fromIntegral w) 0) . (take 4)
 
 chunksOf :: Int -> [a] -> [[a]]
 chunksOf _ [] = []
