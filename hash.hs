@@ -1,4 +1,4 @@
---import qualified Data.ByteString as B
+import Data.Array
 import Data.Bits
 import Data.Word
 import Numeric
@@ -70,9 +70,18 @@ s30 = rotateLeft 30
 
 -- 0 <= t <= 79
 wBuild :: [Word32] -> Int -> Word32
-wBuild ws t
-  |  0 <= t && t <= 15 = ws !! t
-  | 16 <= t && t <= 79 = s1 $ (wBuild ws (t-3)) `xor` (wBuild ws (t-8)) `xor` (wBuild ws (t-14)) `xor` (wBuild ws (t-16))
+wBuild ws t = memoArray ! t
+  where
+    memoArray = listArray (0, 79) (
+        ws ++ 
+          [
+            s1 $ (memoArray ! (t -  3)) `xor`
+                 (memoArray ! (t -  8)) `xor`
+                 (memoArray ! (t - 14)) `xor`
+                 (memoArray ! (t - 16))
+            | t <- [16..79]
+          ]
+      )
 
 iterateT :: (Int -> Word32) -> Int -> Vector -> Vector
 iterateT w t (a, b, c, d, e)
