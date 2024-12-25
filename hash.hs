@@ -82,14 +82,13 @@ wBuild ws t = memoArray ! t
           ]
       )
 
-iterateT :: (Int -> Word32) -> Int -> Vector -> Vector
-iterateT w t (a, b, c, d, e)
-  |  0 <= t && t <= 78 = iterateT w (t+1) ((s5 a) + (f t b c d) + e + (w t) + (k t), a, s30 b, c, d)
-  | 79 <= t            =                  ((s5 a) + (f t b c d) + e + (w t) + (k t), a, s30 b, c, d)
+iterateT :: (Int -> Word32) -> Vector -> Int -> Vector
+iterateT w (a, b, c, d, e) t = ((s5 a) + (f t b c d) + e + (w t) + (k t), a, s30 b, c, d)
 
 iterateN :: Vector -> [Word32] -> Vector
 iterateN (a0, b0, c0, d0, e0) ws = (a0 + a1, b0 + b1, c0 + c1, d0 + d1, e0 + e1)
-  where (a1, b1, c1, d1, e1) = iterateT (wBuild ws) 0 (a0, b0, c0, d0, e0)
+  where
+    (a1, b1, c1, d1, e1) = foldl (iterateT (wBuild ws)) (a0, b0, c0, d0, e0) [0..79]
 
 calcSha1 :: [Word8] -> Vector
 calcSha1 = (foldl iterateN iv) . (chunksOf 16) . (Prelude.map convert8to32) . (chunksOf 4) . prepare
