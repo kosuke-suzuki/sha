@@ -15,8 +15,9 @@ padSize ws = unitSize - 1 - mod (length ws) unitSize - lengthIndicatorSize
 pad :: [Word8] -> [Word8]
 pad = zeroes . padSize
 
+-- the length of returned list is lengthIndicatorSize
 lengthIndicator :: [Word8] -> [Word8]
-lengthIndicator ws = numInBits $ length ws
+lengthIndicator = numInBits . length
 
 -- n < 2^64 == 256^8
 numInBits :: Int -> [Word8]
