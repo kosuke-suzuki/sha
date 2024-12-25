@@ -1,7 +1,10 @@
 import Data.Array
 import Data.Bits
+import qualified Data.ByteString as BS
 import Data.Word
 import Numeric
+import System.Environment
+import System.IO
 
 zeroes :: Int -> [Word8]
 zeroes n = take n $ repeat 0
@@ -91,3 +94,14 @@ calcSha1 = (foldl iterateN iv) . (chunksOf 16) . (Prelude.map convert8to32) . (c
 
 vector2String :: Vector -> String
 vector2String (a, b, c, d, e) = foldr showHex "" [a, b, c, d, e]
+
+main :: IO ()
+main = do
+  args <- getArgs
+  if null args
+    then putStrLn "Specify a file path."
+  else
+    do
+      let filePath = head args
+      content <- BS.readFile filePath
+      putStrLn $ vector2String $ calcSha1 $ BS.unpack content
