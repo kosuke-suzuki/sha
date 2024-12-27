@@ -1,3 +1,7 @@
+module Lib
+    ( someFunc
+    ) where
+
 import Data.Array
 import Data.Bits
 import qualified Data.ByteString as BS
@@ -95,8 +99,8 @@ calcSha1 = (foldl iterateN iv) . (chunksOf 16) . (Prelude.map convert8to32) . (c
 vector2String :: Vector -> String
 vector2String (a, b, c, d, e) = foldr showHex "" [a, b, c, d, e]
 
-main :: IO ()
-main = do
+someFunc :: IO ()
+someFunc = do
   args <- getArgs
   if null args
     then putStrLn "Specify a file path."
