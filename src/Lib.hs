@@ -1,14 +1,12 @@
-module Lib
-    ( someFunc
-    ) where
+module Lib where
 
 import Data.Array
 import Data.Bits
 import qualified Data.ByteString as BS
 import Data.Word
-import Numeric
 import System.Environment
 import System.IO
+import Text.Printf
 
 zeroes :: Int -> [Word8]
 zeroes n = take n $ repeat 0
@@ -17,7 +15,7 @@ unitSize = 64 -- 512 bits
 lengthIndicatorSize = 8 -- 64 bits
 
 padSize :: [a] -> Int
-padSize ws = unitSize - 1 - mod (length ws) unitSize - lengthIndicatorSize
+padSize ws = mod (unitSize - length ws - lengthIndicatorSize - 1) unitSize
 
 pad :: [Word8] -> [Word8]
 pad = zeroes . padSize
@@ -93,14 +91,14 @@ iterateN (a0, b0, c0, d0, e0) ws = (a0 + a1, b0 + b1, c0 + c1, d0 + d1, e0 + e1)
   where
     (a1, b1, c1, d1, e1) = foldl (iterateT (wBuild ws)) (a0, b0, c0, d0, e0) [0..79]
 
-calcSha1 :: [Word8] -> Vector
-calcSha1 = (foldl iterateN iv) . (chunksOf 16) . (Prelude.map convert8to32) . (chunksOf 4) . prepare
-
 vector2String :: Vector -> String
-vector2String (a, b, c, d, e) = foldr showHex "" [a, b, c, d, e]
+vector2String (a, b, c, d, e) = concatMap (printf "%08x") [a, b, c, d, e]
 
-someFunc :: IO ()
-someFunc = do
+calcSha1 :: [Word8] -> String
+calcSha1 = vector2String . (foldl iterateN iv) . (chunksOf 16) . (Prelude.map convert8to32) . (chunksOf 4) . prepare
+
+getFileSha1 :: IO ()
+getFileSha1 = do
   args <- getArgs
   if null args
     then putStrLn "Specify a file path."
@@ -108,4 +106,4 @@ someFunc = do
     do
       let filePath = head args
       content <- BS.readFile filePath
-      putStrLn $ vector2String $ calcSha1 $ BS.unpack content
+      putStrLn $ calcSha1 $ BS.unpack content
