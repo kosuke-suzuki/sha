@@ -1,6 +1,8 @@
 module Lib where
 
+import Control.Monad (replicateM)
 import Data.Array
+import Data.Binary.Get (runGet, getWord32be)
 import Data.Bits
 import qualified Data.ByteString as BS
 import Data.Word
@@ -14,29 +16,33 @@ zeroes n = take n $ repeat 0
 unitSize = 64 -- 512 bits
 lengthIndicatorSize = 8 -- 64 bits
 
-padSize :: [a] -> Int
-padSize ws = mod (unitSize - length ws - lengthIndicatorSize - 1) unitSize
+padSize :: Int -> Int
+padSize n = mod (unitSize - n - lengthIndicatorSize - 1) unitSize
 
-pad :: [Word8] -> [Word8]
+pad :: Int -> [Word8]
 pad = zeroes . padSize
 
-lengthIndicator :: [Word8] -> [Word8]
-lengthIndicator = (numInBits lengthIndicatorSize) . length
+lengthIndicator :: Int -> [Word8]
+lengthIndicator = numInBits lengthIndicatorSize
 
 -- n < 2^64 == 256^8
 numInBits :: Int -> Int -> [Word8]
 numInBits len n = reverse $ map (fromIntegral . (shiftR (8 * n)) . ((*) 8)) $ take len [0..]
 
-prepare :: [Word8] -> [Word8]
-prepare ws = ws ++ (0x80:(pad ws)) ++ (lengthIndicator ws)
+footer :: Int -> BS.ByteString
+footer n = BS.pack $ 0x80:(pad n) ++ lengthIndicator n
 
--- 4 Word8s to 1 Word32 in big endians
-convert8to32 :: [Word8] -> Word32
-convert8to32 = (foldl (\acc w -> (shiftL acc 8) .|. fromIntegral w) 0) . (take 4)
+prepare :: BS.ByteString -> BS.ByteString
+prepare ws = ws `BS.append` (footer $ BS.length ws)
 
-chunksOf :: Int -> [a] -> [[a]]
-chunksOf _ [] = []
-chunksOf n xs = take n xs : chunksOf n (drop n xs)
+-- 4 elements of ByteString to 1 Word32 in big endians
+convertChunkToWord32 :: BS.ByteString -> [Word32]
+convertChunkToWord32 chunk = runGet (replicateM 16 getWord32be) (BS.fromStrict chunk)
+
+foldlChunksOf :: Int -> (a -> BS.ByteString -> a) -> a -> BS.ByteString -> a
+foldlChunksOf n f acc ws
+  | BS.null ws = acc
+  | otherwise  = foldlChunksOf n f (f acc (BS.take n ws)) (BS.drop n ws)
 
 k :: Int -> Word32
 k t
@@ -86,16 +92,16 @@ wBuild ws t = memoArray ! t
 iterateT :: (Int -> Word32) -> Vector -> Int -> Vector
 iterateT w (a, b, c, d, e) t = ((s5 a) + (f t b c d) + e + (w t) + (k t), a, s30 b, c, d)
 
-iterateN :: Vector -> [Word32] -> Vector
+iterateN :: Vector -> BS.ByteString -> Vector
 iterateN (a0, b0, c0, d0, e0) ws = (a0 + a1, b0 + b1, c0 + c1, d0 + d1, e0 + e1)
   where
-    (a1, b1, c1, d1, e1) = foldl (iterateT (wBuild ws)) (a0, b0, c0, d0, e0) [0..79]
+    (a1, b1, c1, d1, e1) = foldl (iterateT (wBuild $ convertChunkToWord32 ws)) (a0, b0, c0, d0, e0) [0..79]
 
 vector2String :: Vector -> String
 vector2String (a, b, c, d, e) = concatMap (printf "%08x") [a, b, c, d, e]
 
-calcSha1 :: [Word8] -> String
-calcSha1 = vector2String . (foldl iterateN iv) . (chunksOf 16) . (Prelude.map convert8to32) . (chunksOf 4) . prepare
+calcSha1 :: BS.ByteString -> String
+calcSha1 = vector2String . foldlChunksOf 64 iterateN iv . prepare
 
 getFileSha1 :: IO ()
 getFileSha1 = do
@@ -106,4 +112,4 @@ getFileSha1 = do
     do
       let filePath = head args
       content <- BS.readFile filePath
-      putStrLn $ calcSha1 $ BS.unpack content
+      putStrLn $ calcSha1 content

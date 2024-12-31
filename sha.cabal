@@ -36,6 +36,7 @@ library
   build-depends:
       array
     , base >=4.7 && <5
+    , binary
     , bytestring
   default-language: Haskell2010
 
@@ -51,6 +52,7 @@ executable sha-exe
   build-depends:
       array
     , base >=4.7 && <5
+    , binary
     , bytestring
     , sha
   default-language: Haskell2010
@@ -68,6 +70,7 @@ test-suite sha-test
   build-depends:
       array
     , base >=4.7 && <5
+    , binary
     , bytestring
     , hspec
     , sha
